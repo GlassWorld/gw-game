@@ -15,7 +15,7 @@ defineEmits<{
 </script>
 
 <template>
-  <div class="overlay">
+  <div class="overlay ui-clickable">
     <div
       class="card"
       :style="{

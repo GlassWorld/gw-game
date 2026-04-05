@@ -17,7 +17,7 @@ export function useGameBootstrap(options: {
   battleState: BattleStateComposable
   onBattleEnd?: (result: BattleResult) => void | Promise<void>
 }) {
-  const containerId = `boss-stage-${Math.random().toString(36).slice(2, 10)}`
+  const containerId = 'boss-stage'
   let phaserGame: Game | null = null
   let sceneRef: BossArenaScene | null = null
   let pendingAction: 'practice' | 'start' | 'restart' | null = null
@@ -25,6 +25,26 @@ export function useGameBootstrap(options: {
   let countdownTimer: ReturnType<typeof setInterval> | null = null
   let initializing = false
   let currentSetup: BattleSetup | null = null
+
+  const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+  const resolveContainer = async () => {
+    if (!import.meta.client) {
+      return null
+    }
+
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const element = document.getElementById(containerId)
+      if (element) {
+        return element
+      }
+
+      await nextTick()
+      await wait(25)
+    }
+
+    return null
+  }
 
   const mountGame = async (setup: BattleSetup) => {
     if (phaserGame && sceneRef) {
@@ -39,6 +59,12 @@ export function useGameBootstrap(options: {
 
     initializing = true
     currentSetup = setup
+    const parentElement = await resolveContainer()
+    if (!parentElement) {
+      initializing = false
+      return
+    }
+
     const [{ default: Phaser }, { BossArenaScene }] = await Promise.all([
       import('phaser'),
       import('~/game/scenes/BossArenaScene')
@@ -57,7 +83,7 @@ export function useGameBootstrap(options: {
       }
     })
 
-    phaserGame = new Phaser.Game(createGameConfig(Phaser, { parent: containerId, scene }))
+    phaserGame = new Phaser.Game(createGameConfig(Phaser, { parent: parentElement, scene }))
     sceneRef = scene
     initializing = false
 

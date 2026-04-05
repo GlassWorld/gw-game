@@ -2,7 +2,7 @@ import { GAME_HEIGHT, GAME_WIDTH } from '~/game/core/constants'
 
 export function createGameConfig(
   phaser: typeof import('phaser'),
-  options: { parent: string, scene: Phaser.Scene }
+  options: { parent: string | HTMLElement, scene: Phaser.Scene }
 ) {
   return {
     type: phaser.AUTO,

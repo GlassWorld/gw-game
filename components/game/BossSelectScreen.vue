@@ -20,6 +20,7 @@ const rollingMessage = ref('`주사위 굴리기`를 눌러 윗면의 보스를 
 const bossRevealKey = ref(0)
 let rollingTimer: ReturnType<typeof setInterval> | null = null
 let finishTimer: ReturnType<typeof setTimeout> | null = null
+let autoNextTimer: ReturnType<typeof setTimeout> | null = null
 
 const diceFaces = computed(() => {
   if (props.bosses.length > 0) {
@@ -51,6 +52,11 @@ const clearRollingTimers = () => {
     clearTimeout(finishTimer)
     finishTimer = null
   }
+
+  if (autoNextTimer) {
+    clearTimeout(autoNextTimer)
+    autoNextTimer = null
+  }
 }
 
 const rollBoss = () => {
@@ -81,7 +87,11 @@ const rollBoss = () => {
     displayFace.value = nextBoss.diceFace
     bossRevealKey.value += 1
     rolling.value = false
-    rollingMessage.value = `${nextBoss.name} 이(가) 선택되었습니다. ${nextBoss.region} 전투로 진입할 수 있습니다.`
+    rollingMessage.value = `${nextBoss.name} 이(가) 선택되었습니다. 잠시 후 다음 단계로 이동합니다.`
+    autoNextTimer = setTimeout(() => {
+      autoNextTimer = null
+      emit('next')
+    }, 700)
   }, 1080)
 }
 

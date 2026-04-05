@@ -1,15 +1,58 @@
 import Phaser from 'phaser'
 import { ARENA_HEIGHT, ARENA_WIDTH } from '~/game/core/constants'
-import type { BossBattleProfile } from '~/game/core/types'
+import type { BossBattleProfile, PlayerEntity } from '~/game/core/types'
 import { projectQuarterView } from '~/game/system/render/renderSyncSystem'
 
-export function createActorDisplay(scene: Phaser.Scene, color: number, radius: number) {
+const LEON_IDLE_FRAME = 10
+const LEON_ATTACK_FRAME = 15
+const LEON_RUN_FRAMES = [6, 7, 8, 9]
+
+export function createActorDisplay(
+  scene: Phaser.Scene,
+  color: number,
+  radius: number,
+  spriteKey?: string,
+  spriteFrame?: number
+) {
   const container = scene.add.container(0, 0)
   const shadow = scene.add.ellipse(0, radius * 0.6, radius * 1.7, radius * 0.9, 0x000000, 0.24)
+
+  if (spriteKey && scene.textures.exists(spriteKey)) {
+    const sprite = scene.add.sprite(0, -radius * 0.4, spriteKey, spriteFrame)
+    sprite.setName('actor-sprite')
+    const targetHeight = radius * 3.6
+    const scale = targetHeight / sprite.height
+    sprite.setScale(scale)
+    container.add([shadow, sprite])
+    return container
+  }
+
   const body = scene.add.circle(0, 0, radius, color, 1)
   const highlight = scene.add.circle(-radius * 0.35, -radius * 0.35, radius * 0.32, 0xffffff, 0.16)
   container.add([shadow, body, highlight])
   return container
+}
+
+export function syncActorSprite(display: PlayerEntity['display'], player: PlayerEntity, now: number) {
+  const container = display as Phaser.GameObjects.Container | null
+  const sprite = container?.getByName?.('actor-sprite') as Phaser.GameObjects.Sprite | null
+
+  if (!sprite) {
+    return
+  }
+
+  if (player.attackAnimMs > 0) {
+    sprite.setFrame(LEON_ATTACK_FRAME)
+    return
+  }
+
+  if (player.dashMsRemaining > 0 || player.moveTarget) {
+    const frameIndex = Math.floor(now / 90) % LEON_RUN_FRAMES.length
+    sprite.setFrame(LEON_RUN_FRAMES[frameIndex]!)
+    return
+  }
+
+  sprite.setFrame(LEON_IDLE_FRAME)
 }
 
 export function createBossDisplay(scene: Phaser.Scene, accentHex: string, radius: number) {

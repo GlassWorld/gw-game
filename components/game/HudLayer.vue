@@ -33,31 +33,17 @@ const orderedSkillIds = computed(() => {
       <p class="pattern">현재 패턴: {{ state.bossPatternLabel }}</p>
     </section>
 
+    <div
+      v-if="state.dashCooldownMs > 0"
+      class="dash-indicator panel cooling"
+    >
+      <span class="dash-label">대시</span>
+      <strong>Space</strong>
+      <p>{{ `${(state.dashCooldownMs / 1000).toFixed(1)}s` }}</p>
+    </div>
+
     <div class="bottom-ui">
       <section class="panel skill-panel">
-        <div class="skill-card dash-card" :class="{ ready: state.dashCooldownMs === 0, cooling: state.dashCooldownMs > 0 }">
-          <div class="skill-head">
-            <div class="skill-key">Space</div>
-            <div class="skill-icon dash-icon">DASH</div>
-          </div>
-
-          <div class="skill-meta">
-            <strong>회피 대시</strong>
-            <p>{{ state.dashCooldownMs > 0 ? 'Cooldown' : 'Ready' }}</p>
-          </div>
-
-          <div class="skill-cooldown">
-            {{ state.dashCooldownMs > 0 ? `${(state.dashCooldownMs / 1000).toFixed(1)}s` : 'OK' }}
-          </div>
-
-          <div class="cooldown-bar">
-            <div
-              class="cooldown-fill"
-              :style="{ width: `${100 - percent(state.dashCooldownMs, 1600)}%` }"
-            />
-          </div>
-        </div>
-
         <div
           v-for="skillId in orderedSkillIds"
           :key="skillId"
@@ -66,25 +52,16 @@ const orderedSkillIds = computed(() => {
         >
           <div class="skill-head">
             <div class="skill-key">{{ state.skills[skillId]?.key }}</div>
-            <div class="skill-icon" :style="colorStyle(state.skills[skillId]?.color)">
-              {{ state.skills[skillId]?.iconLabel }}
-            </div>
+            <div class="skill-icon" :style="colorStyle(state.skills[skillId]?.color)" />
           </div>
 
           <div class="skill-meta">
             <strong>{{ state.skills[skillId]?.label }}</strong>
-            <p>{{ (state.skills[skillId]?.remainingMs ?? 0) > 0 ? 'Cooldown' : 'Ready' }}</p>
+            <p>{{ (state.skills[skillId]?.remainingMs ?? 0) > 0 ? 'Cooldown' : '준비됨' }}</p>
           </div>
 
           <div class="skill-cooldown">
-            {{ (state.skills[skillId]?.remainingMs ?? 0) > 0 ? `${((state.skills[skillId]?.remainingMs ?? 0) / 1000).toFixed(1)}s` : 'OK' }}
-          </div>
-
-          <div class="cooldown-bar">
-            <div
-              class="cooldown-fill"
-              :style="{ width: `${100 - percent(state.skills[skillId]?.remainingMs ?? 0, state.skills[skillId]?.cooldownMs ?? 1)}%` }"
-            />
+            {{ (state.skills[skillId]?.remainingMs ?? 0) > 0 ? `${((state.skills[skillId]?.remainingMs ?? 0) / 1000).toFixed(1)}s` : '' }}
           </div>
         </div>
       </section>
@@ -122,6 +99,7 @@ const orderedSkillIds = computed(() => {
 
 <style scoped>
 .hud {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -135,6 +113,44 @@ const orderedSkillIds = computed(() => {
   background: var(--panel);
   padding: 14px 16px;
   backdrop-filter: blur(12px);
+}
+
+.dash-indicator {
+  position: absolute;
+  left: 50%;
+  bottom: 112px;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  pointer-events: none;
+}
+
+.dash-indicator.cooling {
+  box-shadow: inset 0 0 0 1px rgba(246, 196, 83, 0.18);
+}
+
+.dash-indicator strong,
+.dash-indicator p,
+.dash-label {
+  margin: 0;
+}
+
+.dash-label {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.dash-indicator strong {
+  font-size: 13px;
+}
+
+.dash-indicator p {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 800;
 }
 
 .boss-bar {
@@ -233,17 +249,19 @@ const orderedSkillIds = computed(() => {
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 10px 12px;
-  min-width: 168px;
-  padding: 12px;
+  min-width: 148px;
+  padding: 10px 12px;
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.05);
 }
 
 .skill-card.ready {
+  background: linear-gradient(180deg, rgba(103, 232, 249, 0.2), rgba(103, 232, 249, 0.08));
   box-shadow: inset 0 0 0 1px rgba(103, 232, 249, 0.28);
 }
 
 .skill-card.cooling {
+  background: linear-gradient(180deg, rgba(246, 196, 83, 0.18), rgba(255, 255, 255, 0.04));
   box-shadow: inset 0 0 0 1px rgba(246, 196, 83, 0.18);
 }
 
@@ -264,20 +282,10 @@ const orderedSkillIds = computed(() => {
 }
 
 .skill-icon {
-  display: grid;
-  place-items: center;
-  min-width: 48px;
-  height: 36px;
-  padding: 0 10px;
-  border-radius: 12px;
-  color: #04131d;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.08em;
-}
-
-.dash-icon {
-  background: linear-gradient(135deg, #9ed1ff, #dff5ff);
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
 }
 
 .skill-meta {
@@ -290,29 +298,15 @@ const orderedSkillIds = computed(() => {
 }
 
 .skill-meta p {
-  margin: 4px 0 0;
+  display: none;
 }
 
 .skill-cooldown {
-  min-width: 48px;
+  min-width: 40px;
   text-align: right;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 800;
   color: var(--text);
-}
-
-.cooldown-bar {
-  grid-column: 1 / -1;
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  overflow: hidden;
-}
-
-.cooldown-fill {
-  height: 100%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #67e8f9, #8df7d6);
 }
 
 .info-panel {
@@ -342,6 +336,12 @@ const orderedSkillIds = computed(() => {
 }
 
 @media (max-width: 960px) {
+  .dash-indicator {
+    bottom: 168px;
+    width: calc(100% - 32px);
+    justify-content: center;
+  }
+
   .bottom-ui {
     grid-template-columns: 1fr;
   }

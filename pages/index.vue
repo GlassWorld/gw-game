@@ -14,7 +14,6 @@ import { bossData } from '~/game/boss/bossData'
 import { characterData } from '~/game/character/characterData'
 
 const battleState = useBattleState()
-const inputBindings = useInputBindings()
 const selection = useBattleSelection()
 const travelOverlay = useTravelOverlay()
 const bossCutscene = useBossCutscene()
@@ -28,7 +27,6 @@ const {
   totalSkillUpgradePoints,
   latestReward,
   clearedBossIds,
-  runCompleted,
   selectedCharacter,
   availableSkills,
   selectedBoss,
@@ -72,7 +70,6 @@ const flow = useBattleFlow({
     totalCurrency,
     totalSkillUpgradePoints,
     clearedBossIds,
-    runCompleted,
     selectedCharacter,
     selectedBoss,
     availableBosses,
@@ -126,37 +123,31 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
 
     <Transition name="flow-fade" mode="out-in">
       <section v-if="pageView === 'home'" key="home" class="home-screen">
-        <div class="home-card">
-          <p class="eyebrow">Random Boss Break</p>
-          <h1>RBB</h1>
-          <p class="lead">캐릭터와 스킬을 고르고 다양한 보스를 물리치는 게임</p>
-          <p class="description">보스 종류에 따라 기믹, 지형, 패턴이 달라지는 보스 러시형 액션 게임을 목표로 하는 프로토타입입니다.</p>
+        <div class="home-backdrop">
+          <div class="backdrop-vignette" />
+          <div class="backdrop-portal-glow" />
+          <div class="backdrop-rock ridge-a" />
+          <div class="backdrop-rock ridge-b" />
+          <div class="backdrop-rock ridge-c" />
+        </div>
 
-          <div v-if="runCompleted" class="run-complete-banner">
-            <strong>이번 런을 클리어했습니다.</strong>
-            <p>총 획득: 재화 {{ totalCurrency }}, 강화 포인트 {{ totalSkillUpgradePoints }}</p>
+        <div class="home-card">
+          <div class="home-copy">
+            <div class="home-title-wrap">
+              <h1 class="home-title" data-text="Random Boss Break">Random Boss Break</h1>
+            </div>
+          </div>
+
+          <div class="portal-scene" aria-hidden="true">
+            <div class="portal-image-layer" />
+            <div class="portal-core" />
+            <div class="portal-mist mist-a" />
+            <div class="portal-mist mist-b" />
+            <div class="portal-floor" />
           </div>
 
           <div class="home-actions">
-            <button class="primary" @click="goCharacterSelect">시작하기</button>
-            <p class="hint">캐릭터 선택 → 보스 결정 → 대기소 세팅 → 연습 공간 → 보스전 진입</p>
-          </div>
-
-          <div class="home-grid">
-            <section class="info-panel">
-              <h2>핵심 루프</h2>
-              <p>캐릭터를 고르고, 다음 보스를 확인하고, 대기소에서 세팅한 뒤 연습 공간을 거쳐 보스전에 들어갑니다.</p>
-            </section>
-
-            <section class="info-panel">
-              <h2>조작</h2>
-              <ul class="binding-list">
-                <li v-for="binding in inputBindings.bindings" :key="binding.key">
-                  <strong>{{ binding.key }}</strong>
-                  <span>{{ binding.label }}</span>
-                </li>
-              </ul>
-            </section>
+            <button class="home-enter" @click="goCharacterSelect">진입</button>
           </div>
         </div>
       </section>
@@ -283,18 +274,91 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
 }
 
 .home-screen {
+  position: relative;
+  overflow: hidden;
   display: grid;
   place-items: center;
   min-height: calc(100dvh - 48px);
 }
 
+.home-backdrop {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.backdrop-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(96, 180, 214, 0.16), transparent 18%),
+    radial-gradient(circle at 50% 72%, rgba(31, 60, 87, 0.36), transparent 30%),
+    radial-gradient(circle at 50% 0%, rgba(36, 31, 28, 0.42), transparent 36%),
+    linear-gradient(180deg, #0a0b10 0%, #11131a 44%, #07080c 100%);
+}
+
+.backdrop-portal-glow {
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  width: min(60vw, 720px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle, rgba(127, 212, 239, 0.18) 0%, rgba(69, 122, 168, 0.1) 28%, rgba(4, 11, 18, 0) 68%);
+  filter: blur(26px);
+  animation: pulse-portal 5.4s ease-in-out infinite;
+}
+
+.backdrop-rock {
+  position: absolute;
+  background: linear-gradient(180deg, rgba(25, 20, 21, 0.92), rgba(7, 8, 12, 0.98));
+  box-shadow: inset 0 1px 0 rgba(138, 109, 95, 0.08);
+  filter: blur(1px);
+}
+
+.ridge-a {
+  top: -6%;
+  left: -8%;
+  width: 42%;
+  height: 44%;
+  clip-path: polygon(0 0, 100% 0, 72% 100%, 12% 82%);
+}
+
+.ridge-b {
+  top: -4%;
+  right: -10%;
+  width: 38%;
+  height: 48%;
+  clip-path: polygon(14% 0, 100% 0, 100% 82%, 34% 100%);
+}
+
+.ridge-c {
+  bottom: -12%;
+  left: -6%;
+  width: 112%;
+  height: 26%;
+  clip-path: polygon(0 48%, 8% 36%, 18% 42%, 29% 18%, 42% 34%, 54% 10%, 68% 30%, 81% 12%, 100% 42%, 100% 100%, 0 100%);
+}
+
 .home-card {
-  width: min(960px, 100%);
-  padding: 40px;
-  border: 1px solid var(--line);
-  border-radius: 28px;
-  background: rgba(8, 18, 28, 0.94);
-  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+  position: relative;
+  z-index: 1;
+  width: min(1080px, 100%);
+  min-height: min(760px, calc(100dvh - 88px));
+  padding: 48px;
+  display: grid;
+  align-content: space-between;
+  gap: 28px;
+}
+
+.home-copy {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  text-align: center;
 }
 
 .eyebrow {
@@ -307,96 +371,144 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
 
 .page h1 {
   margin: 0 0 16px;
-  font-size: clamp(34px, 5vw, 60px);
-  line-height: 1.02;
+  font-size: clamp(42px, 7vw, 88px);
+  line-height: 1;
 }
 
-.lead {
-  margin: 0 0 8px;
-  font-size: 20px;
-  font-weight: 700;
-  color: var(--text);
+.home-title-wrap {
+  display: grid;
+  justify-items: center;
 }
 
-.description {
-  max-width: 720px;
+.home-title {
+  position: relative;
   margin: 0;
-  color: var(--muted);
-  line-height: 1.65;
+  color: #ff8c7f;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow:
+    0 2px 0 #2d0202,
+    0 5px 0 #4a0606,
+    0 10px 20px rgba(0, 0, 0, 0.45),
+    0 0 26px rgba(184, 26, 26, 0.28);
+}
+
+.home-title::before,
+.home-title::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.home-title::before {
+  color: rgba(255, 208, 208, 0.2);
+  transform: translate(-2px, -1px);
+  clip-path: polygon(0 0, 100% 0, 100% 38%, 0 52%);
+}
+
+.home-title::after {
+  color: rgba(102, 0, 0, 0.7);
+  transform: translate(2px, 2px);
+  clip-path: polygon(0 44%, 100% 30%, 100% 100%, 0 100%);
 }
 
 .home-actions {
-  margin-top: 28px;
-  padding: 20px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.run-complete-banner {
-  margin-top: 20px;
-  padding: 18px 20px;
-  border: 1px solid rgba(246, 196, 83, 0.24);
-  border-radius: 20px;
-  background:
-    linear-gradient(135deg, rgba(246, 196, 83, 0.12), rgba(255, 143, 112, 0.08)),
-    rgba(255, 255, 255, 0.03);
-}
-
-.run-complete-banner strong {
-  display: block;
-  margin-bottom: 6px;
-  font-size: 20px;
-}
-
-.run-complete-banner p {
-  margin: 0;
-  color: var(--text);
-}
-
-.hint {
-  margin: 12px 0 0;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-.home-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-  margin-top: 20px;
-}
-
-.info-panel {
-  padding: 20px;
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.info-panel h2 {
-  margin: 0 0 12px;
-  font-size: 18px;
-}
-
-.info-panel p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.65;
-}
-
-.binding-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 10px;
-}
-
-.binding-list li {
+  position: relative;
+  z-index: 1;
   display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  color: var(--muted);
+  justify-content: center;
+}
+
+.portal-scene {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  width: min(54vw, 680px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.portal-image-layer,
+.portal-core,
+.portal-floor,
+.portal-mist {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+
+.portal-image-layer {
+  background-image: var(--portal-image, url('/images/title/portal.png'));
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  opacity: 0.98;
+  filter: drop-shadow(0 0 26px rgba(94, 190, 231, 0.18));
+}
+
+.portal-core {
+  left: 50%;
+  top: 50%;
+  width: 36%;
+  height: 36%;
+  transform: translate(-50%, -50%);
+  background:
+    radial-gradient(circle, rgba(202, 255, 255, 0.6) 0%, rgba(103, 232, 249, 0.38) 22%, rgba(27, 113, 170, 0.22) 46%, rgba(5, 14, 24, 0) 76%);
+  filter: blur(2px);
+  animation: pulse-portal 3.8s ease-in-out infinite;
+}
+
+.portal-mist {
+  background: radial-gradient(circle, rgba(157, 223, 248, 0.14) 0%, rgba(157, 223, 248, 0.04) 48%, rgba(157, 223, 248, 0) 74%);
+  filter: blur(16px);
+}
+
+.mist-a {
+  transform: translate(-6%, 3%) scale(1.02);
+  animation: drift-mist 8s ease-in-out infinite;
+}
+
+.mist-b {
+  transform: translate(5%, -4%) scale(0.94);
+  animation: drift-mist 10s ease-in-out infinite reverse;
+}
+
+.portal-floor {
+  left: 50%;
+  bottom: 12%;
+  width: 56%;
+  height: 12%;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(circle, rgba(104, 187, 228, 0.24) 0%, rgba(104, 187, 228, 0.08) 48%, rgba(104, 187, 228, 0) 78%);
+  filter: blur(16px);
+}
+
+.home-enter {
+  min-width: 0;
+  padding: 8px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d7c2ac;
+  font-family: "Times New Roman", "Georgia", "Nanum Myeongjo", serif;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-shadow:
+    0 1px 0 rgba(28, 17, 12, 0.9),
+    0 0 18px rgba(126, 96, 68, 0.18);
+  transition: color 180ms ease, text-shadow 180ms ease, transform 180ms ease;
+}
+
+.home-enter:hover {
+  color: #f0dfc9;
+  text-shadow:
+    0 1px 0 rgba(28, 17, 12, 0.9),
+    0 0 24px rgba(173, 133, 86, 0.24);
+  transform: translateY(-1px);
 }
 
 .stage-page {
@@ -550,6 +662,32 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
   }
 }
 
+@keyframes pulse-portal {
+  0%,
+  100% {
+    opacity: 0.82;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+
+@keyframes drift-mist {
+  0%,
+  100% {
+    opacity: 0.36;
+    transform: translate(-6%, 3%) scale(1.02);
+  }
+
+  50% {
+    opacity: 0.68;
+    transform: translate(4%, -2%) scale(1.06);
+  }
+}
+
 @media (max-width: 960px) {
   .page {
     padding: 16px;
@@ -560,11 +698,31 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
   }
 
   .home-card {
-    padding: 24px;
+    min-height: calc(100dvh - 32px);
+    padding: 28px 22px;
   }
 
-  .home-grid {
-    grid-template-columns: 1fr;
+  .page h1 {
+    font-size: clamp(34px, 10vw, 56px);
+    line-height: 1.06;
+  }
+
+  .home-title-wrap {
+    width: 100%;
+  }
+
+  .portal-scene {
+    top: 48%;
+    width: min(88vw, 520px);
+  }
+
+  .home-actions {
+    justify-content: stretch;
+  }
+
+  .home-enter {
+    width: 100%;
+    font-size: 28px;
   }
 
   .stage-header {

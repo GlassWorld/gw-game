@@ -29,16 +29,30 @@ defineProps<{
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45);
 }
 
-.stage-canvas {
-  width: 100%;
-  height: 100%;
-  min-height: 100%;
-}
-
 .stage-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
+  z-index: 1;
+}
+
+.stage-canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.stage-canvas > * {
+  position: absolute;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.stage-canvas :deep(canvas) {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .stage-overlay :deep(.ui-clickable) {
@@ -46,8 +60,7 @@ defineProps<{
 }
 
 @media (max-width: 960px) {
-  .stage-shell,
-  .stage-canvas {
+  .stage-shell {
     max-height: calc(100dvh - 140px);
   }
 }

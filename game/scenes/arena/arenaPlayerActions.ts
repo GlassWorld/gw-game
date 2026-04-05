@@ -31,6 +31,7 @@ export function handleArenaPlayerActions(options: {
   if (player.basicAttackCooldownMs === 0 && isTargetInBasicAttackRange(player, boss)) {
     performPlayerBasicAttack(runtime, player, boss)
     player.basicAttackCooldownMs = player.basicAttack.cooldownMs
+    player.attackAnimMs = 220
   }
 
   const slotOrder = ['q', 'w', 'e'] as const
@@ -53,6 +54,7 @@ export function handleArenaPlayerActions(options: {
     castSelectedSkill(runtime, skillState.definition)
     player.mp = Math.max(0, player.mp - skillState.definition.mpCost)
     skillState.remainingMs = skillState.definition.cooldownMs
+    player.attackAnimMs = 260
     runtime.battleMessage = `${skillState.definition.label} 시전`
     break
   }

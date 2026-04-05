@@ -11,11 +11,13 @@ import { projectQuarterView, screenToWorld, syncDisplay, syncHazardDisplay } fro
 import { updateRuntimeTimers } from '~/game/system/time/runtimeTimerSystem'
 import { createArenaHudPayload } from '~/game/scenes/arena/arenaHud'
 import { handleArenaPlayerActions } from '~/game/scenes/arena/arenaPlayerActions'
-import { createActorDisplay, createBossDisplay, createHazardDisplay, createProjectileDisplay, drawArenaFloor } from '~/game/scenes/arena/arenaDisplay'
+import { createActorDisplay, createBossDisplay, createHazardDisplay, createProjectileDisplay, drawArenaFloor, syncActorSprite } from '~/game/scenes/arena/arenaDisplay'
 import { createArenaRuntime, clampPointToArena } from '~/game/scenes/arena/arenaRuntime'
 import { drawPlayerSkillPreview, syncBossTelegraphs, syncPlayerSkillPreview } from '~/game/scenes/arena/arenaTelegraph'
 
 export class BossArenaScene extends Phaser.Scene {
+  private static readonly PLAYER_SPRITE_KEY = 'player-leon-sheet'
+  private static readonly PLAYER_IDLE_FRAME = 6
   private readonly callbacks: RuntimeCallbacks
   private setup: BattleSetup
 
@@ -39,6 +41,15 @@ export class BossArenaScene extends Phaser.Scene {
     this.callbacks = options
     this.setup = options.setup
     this.runtime = createArenaRuntime(options.setup)
+  }
+
+  preload() {
+    if (!this.textures.exists(BossArenaScene.PLAYER_SPRITE_KEY)) {
+      this.load.spritesheet(BossArenaScene.PLAYER_SPRITE_KEY, '/images/characters/leon/leon-sprite-sheet.png', {
+        frameWidth: 256,
+        frameHeight: 256
+      })
+    }
   }
 
   create() {
@@ -158,12 +169,28 @@ export class BossArenaScene extends Phaser.Scene {
   }
 
   private createEntityDisplays() {
-    this.runtime.player.display = createActorDisplay(this, this.runtime.setup.character.color, this.runtime.player.radius)
+    const playerSpriteKey = this.runtime.setup.character.id === 'a-swordsman'
+      ? BossArenaScene.PLAYER_SPRITE_KEY
+      : undefined
+    const playerSpriteFrame = this.runtime.setup.character.id === 'a-swordsman'
+      ? BossArenaScene.PLAYER_IDLE_FRAME
+      : undefined
+
+    this.runtime.player.display = createActorDisplay(
+      this,
+      this.runtime.setup.character.color,
+      this.runtime.player.radius,
+      playerSpriteKey,
+      playerSpriteFrame
+    )
     this.runtime.boss.display = createBossDisplay(this, this.getBossDefinition().accentColor, this.runtime.boss.radius)
   }
 
   private syncVisuals() {
     syncDisplay(this.runtime.player)
+    if (this.runtime.setup.character.id === 'a-swordsman') {
+      syncActorSprite(this.runtime.player.display, this.runtime.player, this.time.now)
+    }
     syncDisplay(this.runtime.boss)
     syncBossTelegraphs({
       patternMarker: this.patternMarker,

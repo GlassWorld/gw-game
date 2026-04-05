@@ -12,7 +12,8 @@ import { emptyBattleLoadout } from '~/game/data/loadoutData'
 import { getSkillsByIds } from '~/game/skill/skill'
 
 export function useBattleSelection() {
-  const selectedCharacterId = ref<CharacterId | null>(characterData[0]?.id ?? null)
+  const initialCharacter = characterData.find((character) => character.unlocked) ?? null
+  const selectedCharacterId = ref<CharacterId | null>(initialCharacter?.id ?? null)
   const selectedBossId = ref<string | null>(null)
   const selectedSkillIds = ref<string[]>([])
   const selectedStatId = ref<string | null>(null)
@@ -79,6 +80,11 @@ export function useBattleSelection() {
   }
 
   const selectCharacter = (characterId: CharacterId) => {
+    const nextCharacter = characterData.find((character) => character.id === characterId)
+    if (!nextCharacter?.unlocked) {
+      return
+    }
+
     if (selectedCharacterId.value === characterId) {
       return
     }

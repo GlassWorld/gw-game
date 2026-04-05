@@ -43,6 +43,7 @@ export interface CharacterDefinition {
   name: string
   title: string
   description: string
+  unlocked: boolean
   color: number
   maxHp: number
   maxMp: number
@@ -172,6 +173,7 @@ export interface PlayerEntity extends EntityBase {
   moveTarget: Vec2 | null
   invulnerableMs: number
   basicAttackCooldownMs: number
+  attackAnimMs: number
   dashCooldownMs: number
   dashMsRemaining: number
   dashVector: Vec2
