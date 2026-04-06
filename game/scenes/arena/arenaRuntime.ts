@@ -22,7 +22,8 @@ export function createArenaRuntime(setup: BattleSetup): BattleRuntime {
     result: null,
     running: false,
     nextId: 1,
-    battleMessage: `전투 준비 완료 (${buildLoadoutSummary(setup.loadout)})`
+    battleMessage: `전투 준비 완료 (${buildLoadoutSummary(setup.loadout)})`,
+    combatEvents: []
   }
 }
 

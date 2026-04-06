@@ -13,11 +13,11 @@ import { createArenaHudPayload } from '~/game/scenes/arena/arenaHud'
 import { handleArenaPlayerActions } from '~/game/scenes/arena/arenaPlayerActions'
 import { createActorDisplay, createBossDisplay, createHazardDisplay, createProjectileDisplay, drawArenaFloor, syncActorSprite } from '~/game/scenes/arena/arenaDisplay'
 import { createArenaRuntime, clampPointToArena } from '~/game/scenes/arena/arenaRuntime'
+import { ArenaEffectManager } from '~/game/scenes/arena/arenaEffects'
 import { drawPlayerSkillPreview, syncBossTelegraphs, syncPlayerSkillPreview } from '~/game/scenes/arena/arenaTelegraph'
+import { COMBAT_TUNING } from '~/game/core/constants'
 
 export class BossArenaScene extends Phaser.Scene {
-  private static readonly PLAYER_SPRITE_KEY = 'player-leon-sheet'
-  private static readonly PLAYER_IDLE_FRAME = 6
   private readonly callbacks: RuntimeCallbacks
   private setup: BattleSetup
 
@@ -31,6 +31,7 @@ export class BossArenaScene extends Phaser.Scene {
   private chargeTelegraph?: Phaser.GameObjects.Graphics
   private playerSkillPreview?: Phaser.GameObjects.Graphics
   private playerSkillPreviewUntil = 0
+  private effectManager?: ArenaEffectManager
 
   private getBossDefinition() {
     return bossData.find((boss) => boss.id === this.runtime.setup.bossId) ?? defaultBoss
@@ -41,15 +42,6 @@ export class BossArenaScene extends Phaser.Scene {
     this.callbacks = options
     this.setup = options.setup
     this.runtime = createArenaRuntime(options.setup)
-  }
-
-  preload() {
-    if (!this.textures.exists(BossArenaScene.PLAYER_SPRITE_KEY)) {
-      this.load.spritesheet(BossArenaScene.PLAYER_SPRITE_KEY, '/images/characters/leon/leon-sprite-sheet.png', {
-        frameWidth: 256,
-        frameHeight: 256
-      })
-    }
   }
 
   create() {
@@ -66,6 +58,7 @@ export class BossArenaScene extends Phaser.Scene {
     this.patternMarker = this.add.graphics()
     this.chargeTelegraph = this.add.graphics()
     this.playerSkillPreview = this.add.graphics()
+    this.effectManager = new ArenaEffectManager(this)
     this.createEntityDisplays()
     this.bindPointerInput()
     this.pushHudState()
@@ -133,6 +126,7 @@ export class BossArenaScene extends Phaser.Scene {
     updateProjectiles(this.runtime, deltaMs)
     resolveCollisions(this.runtime, deltaMs)
     this.cleanupDestroyedEntities()
+    this.effectManager?.playQueued(this.runtime)
     this.syncVisuals()
     this.pushHudState()
 
@@ -169,28 +163,18 @@ export class BossArenaScene extends Phaser.Scene {
   }
 
   private createEntityDisplays() {
-    const playerSpriteKey = this.runtime.setup.character.id === 'a-swordsman'
-      ? BossArenaScene.PLAYER_SPRITE_KEY
-      : undefined
-    const playerSpriteFrame = this.runtime.setup.character.id === 'a-swordsman'
-      ? BossArenaScene.PLAYER_IDLE_FRAME
-      : undefined
-
     this.runtime.player.display = createActorDisplay(
       this,
       this.runtime.setup.character.color,
       this.runtime.player.radius,
-      playerSpriteKey,
-      playerSpriteFrame
+      this.runtime.setup.character.id
     )
     this.runtime.boss.display = createBossDisplay(this, this.getBossDefinition().accentColor, this.runtime.boss.radius)
   }
 
   private syncVisuals() {
     syncDisplay(this.runtime.player)
-    if (this.runtime.setup.character.id === 'a-swordsman') {
-      syncActorSprite(this.runtime.player.display, this.runtime.player, this.time.now)
-    }
+    syncActorSprite(this.runtime.player.display, this.runtime.player, this.time.now)
     syncDisplay(this.runtime.boss)
     syncBossTelegraphs({
       patternMarker: this.patternMarker,
@@ -200,10 +184,7 @@ export class BossArenaScene extends Phaser.Scene {
       now: this.time.now
     })
     syncPlayerSkillPreview(this.playerSkillPreview, this.time.now, this.playerSkillPreviewUntil)
-
-    if (this.runtime.player.display?.setAlpha) {
-      this.runtime.player.display.setAlpha(this.runtime.player.invulnerableMs > 0 ? 0.55 : 1)
-    }
+    this.effectManager?.sync(this.runtime, this.time.now)
 
     for (const projectile of this.runtime.projectiles) {
       if (!projectile.display) {
@@ -213,6 +194,12 @@ export class BossArenaScene extends Phaser.Scene {
     }
 
     for (const hazard of this.runtime.hazards) {
+      if (hazard.showIndicator === false) {
+        hazard.display?.destroy?.()
+        hazard.display = null
+        continue
+      }
+
       if (!hazard.display) {
         hazard.display = createHazardDisplay(this, hazard.color, hazard.radius)
       }
@@ -221,7 +208,7 @@ export class BossArenaScene extends Phaser.Scene {
   }
 
   private showPlayerSkillPreview(skill: BattleRuntime['skills'][string]['definition']) {
-    this.playerSkillPreviewUntil = this.time.now + 220
+    this.playerSkillPreviewUntil = this.time.now + COMBAT_TUNING.feedback.skillPreviewMs
     drawPlayerSkillPreview({
       preview: this.playerSkillPreview,
       runtime: this.runtime,

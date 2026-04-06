@@ -20,6 +20,8 @@ export function createBoss(): BossEntity {
     velocity: { x: 0, y: 0 },
     chargeTarget: null,
     phaseAnnounced: false,
+    telegraph: null,
+    hitFlashMs: 0,
     display: null
   }
 }

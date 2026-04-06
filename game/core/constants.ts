@@ -45,6 +45,36 @@ export const BOSS_STATS = {
 
 export const DAMAGE_FLASH_MS = 120
 
+export const COMBAT_TUNING = {
+  player: {
+    hurtboxScale: 0.86,
+    dashInvulnerabilityMs: 220,
+    damageInvulnerabilityMs: 680,
+    basicAttackRecoverMs: 190,
+    skillRecoverMs: 240,
+    basicAttackComboCycleMs: 3000,
+    basicAttackComboStepGapMs: 800,
+    basicAttackComboAnimMs: 320
+  },
+  boss: {
+    hurtboxScale: 0.94,
+    projectileHitboxScale: 0.92,
+    hazardHitboxScale: 0.96,
+    contactHitboxScale: 0.9,
+    telegraphMs: {
+      volley: 520,
+      slam: 760,
+      charge: 680
+    },
+    chargeStopDistance: 36
+  },
+  feedback: {
+    hitFlashMs: DAMAGE_FLASH_MS,
+    skillPreviewMs: 260,
+    dashGhostIntervalMs: 34
+  }
+}
+
 export const PROJECTILE_LIMITS = {
   maxLifetimeMs: 5000
 }

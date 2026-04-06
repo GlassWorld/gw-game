@@ -2,7 +2,7 @@ import type { ComputedRef, Ref } from 'vue'
 import type { BattleResult, BattleSetup, BossDefinition, CharacterDefinition, RunRewardSummary } from '~/game/core/types'
 import { bossData, defaultBoss } from '~/game/boss/bossData'
 
-type PageView = 'home' | 'character' | 'boss' | 'hub' | 'stage'
+type PageView = 'home' | 'character' | 'boss' | 'hub' | 'stage' | 'test'
 
 type GameController = {
   destroyGame: () => void
@@ -69,6 +69,11 @@ export function useBattleFlow(options: {
     stopCurrentFlow()
     options.selection.resetRunProgress()
     pageView.value = 'character'
+  }
+
+  const goTestPage = () => {
+    stopCurrentFlow()
+    pageView.value = 'test'
   }
 
   const goBossSelect = () => {
@@ -203,6 +208,7 @@ export function useBattleFlow(options: {
     pageView,
     goHome,
     goCharacterSelect,
+    goTestPage,
     goBossSelect,
     goHubSetup,
     goNextBossRoll,

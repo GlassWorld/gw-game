@@ -6,6 +6,7 @@ export type BasicAttackMode = 'melee' | 'ranged'
 export type CharacterId = 'a-swordsman' | 'b-mage' | 'c-paladin'
 export type SkillEffectType = 'projectile_fan' | 'projectile_shot' | 'aoe_burst' | 'ground_burst' | 'frontal_cleave'
 export type BattleMode = 'practice' | 'battle'
+export type TelegraphShape = 'circle' | 'cone' | 'line'
 
 export interface Vec2 {
   x: number
@@ -66,6 +67,21 @@ export interface BossBattleProfile {
   slamColor: number
   chargeColor: number
   speedMultiplier: number
+}
+
+export interface BossTelegraphState {
+  pattern: Exclude<BossPatternKey, 'idle'>
+  shape: TelegraphShape
+  durationMs: number
+  remainingMs: number
+  color: number
+  origin: Vec2
+  target: Vec2
+  direction: Vec2
+  radius?: number
+  length?: number
+  width?: number
+  angle?: number
 }
 
 export interface BossDefinition {
@@ -173,10 +189,14 @@ export interface PlayerEntity extends EntityBase {
   moveTarget: Vec2 | null
   invulnerableMs: number
   basicAttackCooldownMs: number
+  basicAttackSequenceStep: number
+  basicAttackSequenceDelayMs: number
+  basicAttackVisualStep: number
   attackAnimMs: number
   dashCooldownMs: number
   dashMsRemaining: number
   dashVector: Vec2
+  hitFlashMs: number
 }
 
 export interface BossEntity extends EntityBase {
@@ -192,6 +212,8 @@ export interface BossEntity extends EntityBase {
   velocity: Vec2
   chargeTarget: Vec2 | null
   phaseAnnounced: boolean
+  telegraph: BossTelegraphState | null
+  hitFlashMs: number
 }
 
 export interface ProjectileEntity extends EntityBase {
@@ -212,6 +234,7 @@ export interface HazardEntity extends EntityBase {
   telegraphMs: number
   triggered: boolean
   color: number
+  showIndicator?: boolean
 }
 
 export interface SkillState {
@@ -246,7 +269,46 @@ export interface BattleRuntime {
   running: boolean
   nextId: number
   battleMessage: string
+  combatEvents: CombatEvent[]
 }
+
+export type CombatEvent =
+  | {
+    type: 'dash'
+    actor: 'player'
+    position: Vec2
+    direction: Vec2
+    color: number
+  }
+  | {
+    type: 'cast'
+    actor: 'player' | 'boss'
+    position: Vec2
+    target: Vec2
+    color: number
+    shape: 'circle' | 'cone' | 'line'
+  }
+  | {
+    type: 'attack'
+    actor: 'player' | 'boss'
+    position: Vec2
+    target: Vec2
+    color: number
+    shape: 'slash' | 'shot' | 'burst' | 'charge'
+  }
+  | {
+    type: 'hit'
+    actor: 'player' | 'boss'
+    position: Vec2
+    color: number
+    heavy?: boolean
+  }
+  | {
+    type: 'dodge'
+    actor: 'player'
+    position: Vec2
+    color: number
+  }
 
 export interface RuntimeCallbacks {
   onHudUpdate: (payload: Partial<BattleHudState>) => void

@@ -1,7 +1,8 @@
-import { BOSS_STATS, PLAYER_STATS } from '~/game/core/constants'
+import { BOSS_STATS, COMBAT_TUNING, PLAYER_STATS } from '~/game/core/constants'
 import type { BattleRuntime, SkillDefinition } from '~/game/core/types'
 import { bossPatternDefinitions } from '~/game/boss/bossPatterns'
-import { isTargetInBasicAttackRange, performPlayerBasicAttack } from '~/game/system/combat/basicAttackSystem'
+import { isTargetInBasicAttackRange, performPlayerBasicAttack, performSwordsmanBasicAttackSequence, startSwordsmanBasicAttackSequence } from '~/game/system/combat/basicAttackSystem'
+import { queueCombatEvent } from '~/game/system/combat/combatFeedback'
 import { castSelectedSkill } from '~/game/system/combat/skillCastingSystem'
 import { normalizeVector } from '~/game/scenes/arena/arenaRuntime'
 
@@ -22,16 +23,34 @@ export function handleArenaPlayerActions(options: {
     player.dashVector = aim
     player.dashMsRemaining = PLAYER_STATS.dashDurationMs
     player.dashCooldownMs = 1600
-    player.invulnerableMs = Math.max(player.invulnerableMs, 180)
+    player.invulnerableMs = Math.max(player.invulnerableMs, COMBAT_TUNING.player.dashInvulnerabilityMs)
     player.moveTarget = null
+    queueCombatEvent(runtime, {
+      type: 'dash',
+      actor: 'player',
+      position: { x: player.x, y: player.y },
+      direction: { ...aim },
+      color: runtime.setup.character.color
+    })
   }
 
   player.mp = Math.min(player.maxMp, player.mp + (player.mpRegenPerSecond * deltaMs) / 1000)
 
-  if (player.basicAttackCooldownMs === 0 && isTargetInBasicAttackRange(player, boss)) {
+  if (player.characterId === 'a-swordsman') {
+    if (player.basicAttackSequenceStep > 0 && player.basicAttackSequenceDelayMs === 0) {
+      performSwordsmanBasicAttackSequence(runtime, player, boss)
+    } else if (
+      player.basicAttackCooldownMs === 0
+      && player.basicAttackSequenceStep === 0
+      && isTargetInBasicAttackRange(player, boss)
+    ) {
+      startSwordsmanBasicAttackSequence(player)
+      performSwordsmanBasicAttackSequence(runtime, player, boss)
+    }
+  } else if (player.basicAttackCooldownMs === 0 && isTargetInBasicAttackRange(player, boss)) {
     performPlayerBasicAttack(runtime, player, boss)
     player.basicAttackCooldownMs = player.basicAttack.cooldownMs
-    player.attackAnimMs = 220
+    player.attackAnimMs = COMBAT_TUNING.player.basicAttackRecoverMs
   }
 
   const slotOrder = ['q', 'w', 'e'] as const
@@ -54,7 +73,7 @@ export function handleArenaPlayerActions(options: {
     castSelectedSkill(runtime, skillState.definition)
     player.mp = Math.max(0, player.mp - skillState.definition.mpCost)
     skillState.remainingMs = skillState.definition.cooldownMs
-    player.attackAnimMs = 260
+    player.attackAnimMs = COMBAT_TUNING.player.skillRecoverMs
     runtime.battleMessage = `${skillState.definition.label} 시전`
     break
   }

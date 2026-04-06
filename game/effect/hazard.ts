@@ -10,6 +10,7 @@ export function createHazard(options: {
   ttlMs: number
   telegraphMs: number
   color: number
+  showIndicator?: boolean
 }): HazardEntity {
   return {
     ...options,

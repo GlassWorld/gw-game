@@ -26,10 +26,14 @@ export function createPlayer(character: CharacterDefinition, loadout: BattleLoad
     moveTarget: null,
     invulnerableMs: 0,
     basicAttackCooldownMs: 0,
+    basicAttackSequenceStep: 0,
+    basicAttackSequenceDelayMs: 0,
+    basicAttackVisualStep: 0,
     attackAnimMs: 0,
     dashCooldownMs: 0,
     dashMsRemaining: 0,
     dashVector: { x: 0, y: 0 },
+    hitFlashMs: 0,
     display: null
   }
 }

@@ -1,4 +1,4 @@
-import { ARENA_HEIGHT, ARENA_WIDTH, BOSS_STATS, PLAYER_STATS, WORLD_PADDING } from '~/game/core/constants'
+import { ARENA_HEIGHT, ARENA_WIDTH, BOSS_STATS, COMBAT_TUNING, PLAYER_STATS, WORLD_PADDING } from '~/game/core/constants'
 import type { BattleRuntime, Vec2 } from '~/game/core/types'
 
 function clamp(value: number, min: number, max: number) {
@@ -72,7 +72,7 @@ export function updateMovement(runtime: BattleRuntime, deltaMs: number) {
   boss.x = bossClamped.x
   boss.y = bossClamped.y
 
-  if (boss.chargeTarget && Math.hypot(boss.chargeTarget.x - boss.x, boss.chargeTarget.y - boss.y) < 26) {
+  if (boss.chargeTarget && Math.hypot(boss.chargeTarget.x - boss.x, boss.chargeTarget.y - boss.y) < COMBAT_TUNING.boss.chargeStopDistance) {
     boss.velocity.x = 0
     boss.velocity.y = 0
     boss.chargeTarget = null

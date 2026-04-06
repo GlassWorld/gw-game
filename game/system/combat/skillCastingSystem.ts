@@ -1,6 +1,7 @@
 import { createHazard } from '~/game/effect/hazard'
 import { createProjectile } from '~/game/effect/projectile'
 import type { BattleRuntime, SkillDefinition, Vec2 } from '~/game/core/types'
+import { queueCombatEvent } from '~/game/system/combat/combatFeedback'
 
 function normalize(vector: Vec2) {
   const length = Math.hypot(vector.x, vector.y) || 1
@@ -22,6 +23,17 @@ export function castSelectedSkill(runtime: BattleRuntime, skill: SkillDefinition
   })
 
   if (skill.effect.type === 'projectile_fan') {
+    queueCombatEvent(runtime, {
+      type: 'cast',
+      actor: 'player',
+      position: { x: player.x, y: player.y },
+      target: {
+        x: player.x + direction.x * 220,
+        y: player.y + direction.y * 220
+      },
+      color: skill.effect.color,
+      shape: 'cone'
+    })
     const count = skill.effect.projectileCount ?? 3
     const spread = skill.effect.spread ?? 0.18
     const baseAngle = Math.atan2(direction.y, direction.x)
@@ -46,6 +58,17 @@ export function castSelectedSkill(runtime: BattleRuntime, skill: SkillDefinition
   }
 
   if (skill.effect.type === 'projectile_shot') {
+    queueCombatEvent(runtime, {
+      type: 'attack',
+      actor: 'player',
+      position: { x: player.x, y: player.y },
+      target: {
+        x: player.x + direction.x * 220,
+        y: player.y + direction.y * 220
+      },
+      color: skill.effect.color,
+      shape: 'shot'
+    })
     runtime.projectiles.push(createProjectile({
       id: `proj-${runtime.nextId++}`,
       x: player.x + direction.x * (player.radius + 8),
@@ -62,6 +85,14 @@ export function castSelectedSkill(runtime: BattleRuntime, skill: SkillDefinition
   }
 
   if (skill.effect.type === 'aoe_burst') {
+    queueCombatEvent(runtime, {
+      type: 'cast',
+      actor: 'player',
+      position: { x: player.x, y: player.y },
+      target: { x: player.x, y: player.y },
+      color: skill.effect.color,
+      shape: 'circle'
+    })
     runtime.hazards.push(createHazard({
       id: `hazard-${runtime.nextId++}`,
       x: player.x,
@@ -77,6 +108,17 @@ export function castSelectedSkill(runtime: BattleRuntime, skill: SkillDefinition
   }
 
   if (skill.effect.type === 'ground_burst') {
+    queueCombatEvent(runtime, {
+      type: 'cast',
+      actor: 'player',
+      position: { x: player.x, y: player.y },
+      target: {
+        x: hasAim ? aimTarget.x : fallbackTarget.x,
+        y: hasAim ? aimTarget.y : fallbackTarget.y
+      },
+      color: skill.effect.color,
+      shape: 'circle'
+    })
     runtime.hazards.push(createHazard({
       id: `hazard-${runtime.nextId++}`,
       x: hasAim ? aimTarget.x : fallbackTarget.x,
@@ -91,6 +133,17 @@ export function castSelectedSkill(runtime: BattleRuntime, skill: SkillDefinition
     return
   }
 
+  queueCombatEvent(runtime, {
+    type: 'attack',
+    actor: 'player',
+    position: { x: player.x, y: player.y },
+    target: {
+      x: player.x + direction.x * (skill.effect.offset ?? 48),
+      y: player.y + direction.y * (skill.effect.offset ?? 48)
+    },
+    color: skill.effect.color,
+    shape: 'slash'
+  })
   runtime.hazards.push(createHazard({
     id: `hazard-${runtime.nextId++}`,
     x: player.x + direction.x * (skill.effect.offset ?? 48),

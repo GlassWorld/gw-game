@@ -1,8 +1,105 @@
 import type Phaser from 'phaser'
-import type { BattleRuntime, SkillDefinition } from '~/game/core/types'
+import type { BattleRuntime, BossTelegraphState, SkillDefinition, Vec2 } from '~/game/core/types'
 import type { BossBattleProfile } from '~/game/core/types'
 import { projectQuarterView } from '~/game/system/render/renderSyncSystem'
 import { normalizeVector } from '~/game/scenes/arena/arenaRuntime'
+
+function sampleCirclePoints(center: Vec2, radius: number, scale: number) {
+  const points: Vec2[] = []
+  const steps = 36
+
+  for (let index = 0; index <= steps; index += 1) {
+    const angle = (Math.PI * 2 * index) / steps
+    points.push({
+      x: center.x + Math.cos(angle) * radius * scale,
+      y: center.y + Math.sin(angle) * radius * scale
+    })
+  }
+
+  return points
+}
+
+function sampleConePoints(telegraph: BossTelegraphState, scale: number) {
+  const length = (telegraph.length ?? 320) * scale
+  const halfAngle = (telegraph.angle ?? 0.7) * 0.5
+  const baseAngle = Math.atan2(telegraph.direction.y, telegraph.direction.x)
+  const points: Vec2[] = [{ ...telegraph.origin }]
+  const steps = 18
+
+  for (let index = 0; index <= steps; index += 1) {
+    const t = index / steps
+    const angle = baseAngle - halfAngle + ((halfAngle * 2) * t)
+    points.push({
+      x: telegraph.origin.x + Math.cos(angle) * length,
+      y: telegraph.origin.y + Math.sin(angle) * length
+    })
+  }
+
+  return points
+}
+
+function sampleLinePoints(telegraph: BossTelegraphState, scale: number) {
+  const length = (telegraph.length ?? 300) * scale
+  const width = (telegraph.width ?? 48) * (0.88 + scale * 0.12)
+  const direction = normalizeVector(telegraph.direction)
+  const normal = { x: -direction.y, y: direction.x }
+  const end = {
+    x: telegraph.origin.x + direction.x * length,
+    y: telegraph.origin.y + direction.y * length
+  }
+
+  return [
+    {
+      x: telegraph.origin.x + normal.x * width,
+      y: telegraph.origin.y + normal.y * width
+    },
+    {
+      x: telegraph.origin.x - normal.x * width,
+      y: telegraph.origin.y - normal.y * width
+    },
+    {
+      x: end.x - normal.x * width,
+      y: end.y - normal.y * width
+    },
+    {
+      x: end.x + normal.x * width,
+      y: end.y + normal.y * width
+    }
+  ]
+}
+
+function drawWorldPolygon(graphics: Phaser.GameObjects.Graphics, points: Vec2[]) {
+  if (points.length === 0) {
+    return
+  }
+
+  const first = projectQuarterView(points[0]!)
+  graphics.beginPath()
+  graphics.moveTo(first.x, first.y + 6)
+
+  for (const point of points.slice(1)) {
+    const projected = projectQuarterView(point)
+    graphics.lineTo(projected.x, projected.y + 6)
+  }
+
+  graphics.closePath()
+  graphics.fillPath()
+  graphics.strokePath()
+}
+
+function drawTelegraphShape(graphics: Phaser.GameObjects.Graphics, telegraph: BossTelegraphState, scale: number) {
+  if (telegraph.shape === 'circle') {
+    drawWorldPolygon(graphics, sampleCirclePoints(telegraph.target, telegraph.radius ?? 64, scale))
+    return
+  }
+
+  if (telegraph.shape === 'cone') {
+    drawWorldPolygon(graphics, sampleConePoints(telegraph, scale))
+    return
+  }
+
+  drawWorldPolygon(graphics, sampleLinePoints(telegraph, scale))
+}
 
 export function syncBossTelegraphs(options: {
   patternMarker?: Phaser.GameObjects.Graphics
@@ -21,26 +118,45 @@ export function syncBossTelegraphs(options: {
   }
 
   const screen = projectQuarterView(boss)
+  const telegraph = boss.telegraph
   const elapsedWave = Math.sin(now / 180) * 0.5 + 0.5
-  const patternColor = boss.pattern === 'volley'
-    ? battleProfile.volleyColor
-    : boss.pattern === 'slam'
-      ? battleProfile.slamColor
-      : battleProfile.chargeColor
 
-  patternMarker.lineStyle(3, patternColor, 0.8)
-  patternMarker.fillStyle(patternColor, 0.12 + elapsedWave * 0.08)
-  patternMarker.setDepth(screen.y - 3)
-  patternMarker.fillEllipse(screen.x, screen.y + 10, 150 + elapsedWave * 14, 84 + elapsedWave * 10)
-  patternMarker.strokeEllipse(screen.x, screen.y + 10, 150 + elapsedWave * 14, 84 + elapsedWave * 10)
+  if (!telegraph) {
+    const patternColor = boss.pattern === 'volley'
+      ? battleProfile.volleyColor
+      : boss.pattern === 'slam'
+        ? battleProfile.slamColor
+        : battleProfile.chargeColor
 
-  if (boss.pattern === 'charge' && !boss.chargeTarget && Math.hypot(boss.velocity.x, boss.velocity.y) < 1) {
-    const target = projectQuarterView(runtime.player)
-    chargeTelegraph.setDepth(screen.y + 1)
-    chargeTelegraph.lineStyle(5, 0xffefb0, 0.95)
+    patternMarker.lineStyle(3, patternColor, 0.8)
+    patternMarker.fillStyle(patternColor, 0.1 + elapsedWave * 0.08)
+    patternMarker.setDepth(screen.y - 3)
+    patternMarker.fillEllipse(screen.x, screen.y + 10, 150 + elapsedWave * 14, 84 + elapsedWave * 10)
+    patternMarker.strokeEllipse(screen.x, screen.y + 10, 150 + elapsedWave * 14, 84 + elapsedWave * 10)
+    return
+  }
+
+  const progress = 1 - (telegraph.remainingMs / Math.max(telegraph.durationMs, 1))
+  const blink = progress > 0.55 ? (Math.sin(now / 38) * 0.5 + 0.5) : progress
+  const scale = 0.92 + progress * 0.08
+  const fillAlpha = 0.1 + progress * 0.14 + blink * 0.08
+  const lineAlpha = Math.min(1, 0.42 + progress * 0.38 + blink * 0.2)
+  const lineWidth = telegraph.shape === 'line' ? 5 : 4
+
+  patternMarker.setDepth(projectQuarterView(telegraph.target).y - 4)
+  patternMarker.lineStyle(lineWidth, telegraph.color, lineAlpha)
+  patternMarker.fillStyle(telegraph.color, fillAlpha)
+  drawTelegraphShape(patternMarker, telegraph, scale)
+
+  if (telegraph.shape === 'line') {
+    const target = projectQuarterView({
+      x: telegraph.origin.x + telegraph.direction.x * (telegraph.length ?? 260),
+      y: telegraph.origin.y + telegraph.direction.y * (telegraph.length ?? 260)
+    })
+    chargeTelegraph.setDepth(target.y + 2)
+    chargeTelegraph.lineStyle(3, 0xfff1c9, 0.6 + blink * 0.35)
+    chargeTelegraph.strokeCircle(target.x, target.y, 10 + blink * 5)
     chargeTelegraph.lineBetween(screen.x, screen.y - 4, target.x, target.y)
-    chargeTelegraph.fillStyle(0xffefb0, 0.9)
-    chargeTelegraph.fillCircle(target.x, target.y, 8)
   }
 }
 

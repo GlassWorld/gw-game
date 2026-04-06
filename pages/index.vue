@@ -9,6 +9,7 @@ import GameStage from '~/components/game/GameStage.vue'
 import HubSetupScreen from '~/components/game/HubSetupScreen.vue'
 import HudLayer from '~/components/game/HudLayer.vue'
 import LoadingOverlay from '~/components/game/LoadingOverlay.vue'
+import MotionTestScreen from '~/components/game/MotionTestScreen.vue'
 import ResultOverlay from '~/components/game/ResultOverlay.vue'
 import { bossData } from '~/game/boss/bossData'
 import { characterData } from '~/game/character/characterData'
@@ -93,6 +94,7 @@ const {
   pageView,
   goHome,
   goCharacterSelect,
+  goTestPage,
   goBossSelect,
   goHubSetup,
   goNextBossRoll,
@@ -148,9 +150,18 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
 
           <div class="home-actions">
             <button class="home-enter" @click="goCharacterSelect">진입</button>
+            <button class="home-test" @click="goTestPage">모션 테스트</button>
           </div>
         </div>
       </section>
+
+      <MotionTestScreen
+        v-else-if="pageView === 'test'"
+        key="test"
+        :characters="characterData"
+        :bosses="bossData"
+        @back="goHome"
+      />
 
       <CharacterSelectScreen
         v-else-if="pageView === 'character'"
@@ -418,6 +429,8 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
   z-index: 1;
   display: flex;
   justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
 .portal-scene {
@@ -508,6 +521,26 @@ const toggleSingleSelect = (stateRef: Ref<string | null>, optionId: string) => {
   text-shadow:
     0 1px 0 rgba(28, 17, 12, 0.9),
     0 0 24px rgba(173, 133, 86, 0.24);
+  transform: translateY(-1px);
+}
+
+.home-test {
+  min-width: 0;
+  padding: 10px 18px;
+  border: 1px solid rgba(126, 190, 212, 0.26);
+  border-radius: 999px;
+  background: rgba(6, 15, 24, 0.68);
+  color: #d8edf9;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  backdrop-filter: blur(8px);
+  transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.home-test:hover {
+  border-color: rgba(126, 190, 212, 0.52);
+  background: rgba(12, 27, 40, 0.84);
   transform: translateY(-1px);
 }
 
